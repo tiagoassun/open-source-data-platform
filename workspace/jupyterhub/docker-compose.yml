@@ -1,0 +1,26 @@
+services:
+  jupyterhub:
+    image: jupyterhub/jupyterhub:latest
+    container_name: jupyterhub
+    networks:
+      - data-net
+    restart: unless-stopped
+    ports:
+      - "8888:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /docker-data/jupyterhub:/srv/jupyterhub
+    environment:
+      - JUPYTERHUB_CRYPT_KEY=${JUPYTERHUB_CRYPT_KEY}
+      - DATABASE_URL=postgresql://admin:${POSTGRES_METADATA_PASSWORD}@postgres-metadata:5432/jupyterhub_db
+      # Timeouts para garantir que a imagem Mega Jupyter suba no em servidores fracos
+      - DOCKER_SPAWNER_HTTP_TIMEOUT=600
+      - JUPYTERHUB_HTTP_TIMEOUT=600
+    command: >
+      bash -c "apt-get update && apt-get install -y gcc libpq-dev python3-dev &&
+      pip install dockerspawner jupyterhub-nativeauthenticator psycopg2-binary &&
+      jupyterhub -f /srv/jupyterhub/jupyterhub_config.py"
+
+networks:
+  data-net:
+    external: true
