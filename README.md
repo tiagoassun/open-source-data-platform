@@ -7,12 +7,12 @@ Uma plataforma de dados moderna e modular, construída inteiramente com ferramen
 A plataforma é dividida em camadas lógicas:
 
 * **Management:** Portainer (Gestão de Containers)
+* **Networking:** Cloudflare Tunnel
 * **Storage:** MinIO (Object Storage S3)
 * **Databases:** PostgreSQL (Metadata) e PostgreSQL + Hydra (Analytics)
 * **Workspace:** JupyterHub
 * **Orchestration:** Apache Airflow
 * **Dataviz:** Apache Superset
-* **Networking:** Cloudflare Tunnel
 
 ---
 
@@ -26,8 +26,14 @@ chmod +x scripts/create_network.sh
 ./scripts/create_network.sh
 ```
 
+---
+
 ### 2. Subir o Gerenciamento (Portainer)
-O Portainer deve ser o primeiro container a ser levantado. Estando na pasta raiz do repositório, execute o comando abaixo:
+O Portainer deve ser o primeiro container a ser levantado.
+
+> **💡 Nota sobre o Deploy (Portainer vs Terminal):** > O Portainer é a base do nosso gerenciamento e, por isso, é o único container que obrigatoriamente deve ser iniciado via linha de comando. **Todos os próximos serviços desta plataforma** devem, idealmente, ser criados e gerenciados via interface gráfica do Portainer (na seção *Stacks*).
+
+Estando na pasta raiz do repositório, execute o comando abaixo:
 
 **Comandos:**
 ```bash
@@ -38,3 +44,35 @@ docker compose -f management/portainer/docker-compose.yml up -d
 * **Acesso:** https://{IP_DO_SERVIDOR}:9443
 * **Rede:** Utiliza a rede externa `data-net`
 * **Volumes:** Dados persistidos em `/docker-data/portainer`
+
+---
+
+### 3. Expor a Plataforma (Cloudflare Tunnel)
+Para acessar os serviços externamente com segurança (HTTPS) e sem necessidade de abrir portas no servidor, utilizamos o Cloudflare Tunnel.
+
+> 
+> No entanto, para fins de reprodutibilidade e contingência, as instruções manuais via terminal sempre estarão documentadas abaixo.
+
+**Pré-requisito:**
+Crie um arquivo `.env` dentro da pasta `networking/cloudflare` com o token gerado no painel do Cloudflare Zero Trust:
+```env
+CLOUDFLARE_TOKEN=seu_token_aqui
+```
+
+**🚀 Opção A: Deploy via Portainer (Recomendado)**
+1. Acesse o Portainer em `https://{IP_DO_SERVIDOR}:9443` e vá em **Stacks** > **Add stack**.
+2. Nomeie como `cloudflare-tunnel`.
+3. Selecione o método de upload (Repository, Web editor, etc.) e aponte para o arquivo `networking/cloudflare/docker-compose.yml`.
+4. Na seção *Environment variables*, adicione a variável `CLOUDFLARE_TOKEN` com o seu token.
+5. Clique em **Deploy the stack**.
+
+**💻 Opção B: Deploy Manual via Terminal**
+Estando na pasta raiz do repositório, execute o comando abaixo:
+```bash
+docker compose -f networking/cloudflare/docker-compose.yml up -d
+```
+
+**Detalhes Técnicos:**
+* **Rede:** Utiliza a rede externa `data-net` para enxergar os outros containers.
+* **Volumes:** Dados e credenciais persistidos no host em `/docker-data/cloudflare`.
+* **Restart:** Configurado como `unless-stopped` para respeitar interrupções manuais.

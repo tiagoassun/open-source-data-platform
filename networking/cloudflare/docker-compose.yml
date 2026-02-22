@@ -1,0 +1,14 @@
+services:
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-tunnel
+    restart: unless-stopped
+    volumes:
+      - /docker-data/cloudflare:/home/nonroot/.cloudflared
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TOKEN}
+    networks:
+      - data-net
+
+networks:
+  data-net:
+    external: true
