@@ -412,3 +412,42 @@ docker compose -f orchestration/airflow/docker-compose.yml up -d
 * **Acesso Externo:** `{IP_DO_SERVIDOR}:8080`
 * **Rede:** `data-net` (acesso a todos os bancos e serviços).
 * **Volumes:** `/docker-data/airflow/` (Persistência de Dags, Logs e Plugins).
+
+
+---
+
+
+### 8. Visualização de Dados (Apache Superset)
+Plataforma de Business Intelligence (BI) de última geração, conectada a todas as fontes de dados da rede `data-net`.
+
+#### 🧰 Drivers Instalados
+O container é provisionado automaticamente com suporte a:
+* **Relacionais:** PostgreSQL, Oracle, MySQL, SQL Server.
+* **NoSQL:** MongoDB.
+* **Cloud/Object Storage:** S3, MinIO (via boto3/s3fs).
+
+#### ⚠️ Pré-requisitos (Importante)
+Este serviço utiliza o banco central da plataforma (`postgres-metadata`).
+1. Acesse o seu banco de dados `postgres-metadata` e **crie um database vazio chamado `superset_db`**.
+2. Crie o arquivo `.env` na pasta `dataviz/superset/`:
+   ```env
+   POSTGRES_METADATA_PASSWORD=senha_do_seu_banco_metadata
+   SUPERSET_ADMIN_EMAIL=tiagoassunjob@outlook.com
+   SUPERSET_ADMIN_PASSWORD=sua_senha_web_superset
+   SUPERSET_SECRET_KEY=sua_chave_hexadecimal_aleatoria
+   ```
+
+**🚀 Opção A: Deploy via Portainer (Recomendado)**
+1. Crie uma stack nomeada `superset`.
+2. Aponte para o arquivo `dataviz/superset/docker-compose.yml`.
+3. Preencha as variáveis e faça o deploy.
+
+**💻 Opção B: Deploy Manual via Terminal**
+```bash
+docker compose -f dataviz/superset/docker-compose.yml up -d
+```
+
+**Detalhes Técnicos:**
+* **Acesso Externo:** `{IP_DO_SERVIDOR}:8088`
+* **Rede:** `data-net`
+* **Volumes:** `/docker-data/superset/`
