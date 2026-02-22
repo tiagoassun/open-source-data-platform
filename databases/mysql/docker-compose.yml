@@ -1,0 +1,18 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+    volumes:
+      - /docker-data/mysql:/var/lib/mysql
+    networks:
+      - data-net
+    ports:
+      - "3306:3306"
+
+networks:
+  data-net:
+    external: true

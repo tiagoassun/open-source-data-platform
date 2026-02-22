@@ -1,0 +1,17 @@
+services:
+  cassandra:
+    image: cassandra:latest
+    container_name: cassandra
+    restart: unless-stopped
+    environment:
+      - CASSANDRA_CLUSTER_NAME=LabCluster
+    volumes:
+      - /docker-data/cassandra:/var/lib/cassandra
+    networks:
+      - data-net
+    ports:
+      - "9042:9042"
+
+networks:
+  data-net:
+    external: true
