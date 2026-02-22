@@ -1,0 +1,33 @@
+services:
+  superset:
+    image: apache/superset:latest
+    container_name: superset
+    user: root
+    restart: unless-stopped
+    networks:
+      - data-net
+    ports:
+      - "8088:8088"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY}
+      - PYTHONPATH=/app/pythonpath
+    command: >
+      bash -c "
+      /app/.venv/bin/python3 -m ensurepip &&
+      /app/.venv/bin/python3 -m pip install --no-cache-dir psycopg2-binary oracledb pymysql pymssql pymongo boto3 s3fs &&
+      echo \"SQLALCHEMY_DATABASE_URI = 'postgresql://admin:${POSTGRES_METADATA_PASSWORD}@postgres-metadata:5432/superset_db'\" > /app/pythonpath/superset_config.py &&
+      echo \"BABEL_DEFAULT_LOCALE = 'pt_BR'\" >> /app/pythonpath/superset_config.py &&
+      echo \"LANGUAGES = {'pt_BR': {'flag': 'br', 'name': 'Portuguese (Brazil)'}}\" >> /app/pythonpath/superset_config.py &&
+      /app/.venv/bin/superset db upgrade &&
+      /app/.venv/bin/superset fab create-admin --username admin --firstname Admin --lastname User --email ${SUPERSET_ADMIN_EMAIL} --password ${SUPERSET_ADMIN_PASSWORD} &&
+      /app/.venv/bin/superset init &&
+      /usr/bin/run-server.sh --host 0.0.0.0 --port 8088 --with-threads --reload --debugger"
+    volumes:
+      - /docker-data/superset:/app/superset_home
+      - /docker-data/superset/pythonpath:/app/pythonpath
+
+networks:
+  data-net:
+    external: true
