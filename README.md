@@ -265,3 +265,82 @@ docker compose -f databases/opensearch/docker-compose.yml up -d
 ```
 * **Acesso Externo na Mesma Rede:** `{IP_DO_SERVIDOR}:9200`
 * **Volumes:** `/docker-data/opensearch/`
+
+
+---
+---
+
+
+### 6. Workspace de Data Science (JupyterHub)
+Um ambiente de desenvolvimento multiusuário de altíssimo desempenho. Ele utiliza a técnica de "Docker Spawning", o que significa que cada usuário que faz login ganha **seu próprio container Docker isolado**, rodando uma imagem massivamente customizada com recursos pré-instalados para quase qualquer cenário de engenharia e ciência de dados.
+
+
+#### 🛡️ Isolamento, Persistência e Boas Práticas
+A arquitetura de containers por usuário traz algumas características essenciais para o uso diário:
+* **Espaço Individual:** Cada usuário possui sua própria pasta persistente no servidor, mapeada fisicamente no host em `/docker-data/jupyterhub/users/{username}`. Todos os notebooks e arquivos salvos ali dentro estão seguros.
+* **Ambiente Efêmero (Zera no Logout):** O container do usuário é destruído e recriado a cada ciclo de login/logout. Isso é excelente: se você quebrar o ambiente instalando dependências conflitantes, basta fazer logout e login novamente para ganhar um container limpo e 100% funcional.
+* **⚠️ Regra de Ouro (Commit sempre!):** Como o container "zera" ao deslogar, qualquer configuração extra, instalação manual via `pip/apt-get` ou arquivo salvo *fora* da sua pasta de usuário será **perdido para sempre**. Mantenha seus códigos rigorosamente dentro da sua pasta mapeada e **faça commits frequentes no Git** para garantir seu progresso.
+
+
+#### ✨ Estrutura Automática (Lifestyle Hook)
+Para facilitar o início do trabalho, sempre que um usuário faz o login, o sistema executa um script automático que cria duas pastas essenciais dentro do seu diretório pessoal:
+* **`git/`**: Uma pasta limpa e dedicada para você clonar seus repositórios e manter o controle de versão dos seus projetos de forma organizada.
+* **`_exemplos/`**: Uma pasta contendo 4 notebooks já configurados para demonstrar o poder e os kernels do ambiente:
+  1. `spark_hello.ipynb`: Um teste de processamento em memória utilizando PySpark e Python 3.
+  2. `cpp_hello.ipynb`: Exemplo de código compilado e executado nativamente no kernel de C++17.
+  3. `rust_hello.ipynb`: Exemplo de execução interativa utilizando o kernel de Rust.
+  4. `r_hello.ipynb`: Exemplo de manipulação de mensagens e plotagem de gráficos utilizando R.
+
+
+#### 🧰 O que tem dentro do Workspace?
+A imagem base (`tiagoassun/mega-jupyter:latest`) foi construída para ser um "canivete suíço" absoluto, contendo:
+* **Kernels Inclusos:** Python, R, Scala, PySpark, C++ (via xeus-cling), Rust (via evcxr_jupyter) e C (via jupyter-c-kernel).
+* **Data Science:** `pandas`, `numpy`, `scipy`, `matplotlib`, `seaborn`, `bokeh`, `scikit-learn`, `statsmodels`, `sympy`, `patsy`, `sqlalchemy`, `h5py`, `tables` (pytables).
+* **Web Scraping & Extração:** `beautifulsoup4`, `requests`, `scrapy`, `selenium` (com webdriver), `playwright`.
+* **APIs Sociais/Web:** `tweepy`, `instaloader`, `facebook-sdk`, `praw`, `discord.py`, `spotipy`, `linkedin-api`, `pywhatkit`, `python-telegram-bot`, `google-api-python-client`, `cinemagoer`, `justwatch`.
+* **APIs de IA:** `google-generativeai` (Gemini), `openai` (ChatGPT/DeepSeek), `anthropic`.
+* **Drivers de Bancos de Dados:** `boto3` (MinIO/S3), `psycopg2-binary` (PostgreSQL), `oracledb` (Oracle), `pymysql` (MySQL/MariaDB), `pymssql` (SQL Server), `cassandra-driver`, `pymongo` (MongoDB), `opensearch-py`.
+
+
+#### 🏗️ Arquitetura dos Arquivos
+A configuração deste serviço é dividida em três pilares dentro da pasta `workspace/jupyterhub/`:
+1. **`Dockerfile`:** Define a receita da imagem isolada dos usuários.
+2. **`jupyterhub_config.py`:** O cérebro do sistema. Gerencia a autenticação, a conexão com o banco de metadados, a rede e o *Lifestyle Hook*.
+3. **`docker-compose.yml`:** A infraestrutura principal que levanta o Hub e o conecta ao Docker do servidor host.
+
+
+#### ⚠️ Pré-requisitos (Importante)
+Este serviço possui **dependência direta** do container `postgres-metadata` para salvar usuários e sessões.
+1. Acesse o seu banco de dados `postgres-metadata` e **crie um database vazio chamado `jupyterhub_db`**.
+2. Gere uma chave de criptografia segura rodando `openssl rand -hex 32` no terminal Linux do servidor.
+3. Crie o arquivo `.env` na pasta `workspace/jupyterhub/`:
+   ```env
+   JUPYTERHUB_CRYPT_KEY=cole_a_chave_gerada_aqui
+   POSTGRES_METADATA_PASSWORD=senha_do_seu_banco_metadata
+   ```
+4. **Construção da Imagem do Workspace (Apenas na primeira vez):**
+   Você deve "fabricar" a imagem gigante do workspace na sua máquina antes de subir o Hub.
+   
+   > **💡 Atenção ao Build:** Como esta imagem compila pacotes pesados (como Rust e C++), o processo exige muito processamento e tempo. **Nunca tente fazer o build dessa imagem pelo Portainer**, pois a interface web provavelmente vai dar *timeout*. Faça a construção sempre via terminal para acompanhar os logs.
+
+   Estando na pasta raiz do repositório, execute:
+   ```bash
+   docker build -t tiagoassun/mega-jupyter:latest -f workspace/jupyterhub/Dockerfile workspace/jupyterhub
+   ```
+
+**🚀 Opção A: Deploy do Hub via Portainer (Recomendado)**
+Após a imagem ter sido construída no passo acima, você pode subir o serviço principal pelo Portainer.
+1. Crie uma stack nomeada `jupyterhub`.
+2. Aponte para o arquivo `workspace/jupyterhub/docker-compose.yml`.
+3. Preencha as variáveis e faça o deploy.
+
+**💻 Opção B: Deploy do Hub Manual via Terminal**
+Estando na pasta raiz do repositório, execute:
+```bash
+docker compose -f workspace/jupyterhub/docker-compose.yml up -d
+```
+
+**Detalhes Técnicos:**
+* **Acesso Externo:** `{IP_DO_SERVIDOR}:8888`
+* **Rede:** Utiliza a `data-net` nativamente.
+* **Volumes:** `/docker-data/jupyterhub/`
