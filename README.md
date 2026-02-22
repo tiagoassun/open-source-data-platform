@@ -344,3 +344,71 @@ docker compose -f workspace/jupyterhub/docker-compose.yml up -d
 * **Acesso Externo:** `{IP_DO_SERVIDOR}:8888`
 * **Rede:** Utiliza a `data-net` nativamente.
 * **Volumes:** `/docker-data/jupyterhub/`
+
+
+---
+---
+
+
+### 7. Orquestração de Dados (Apache Airflow)
+Responsável por agendar, orquestrar e monitorar todos os pipelines de dados da plataforma. 
+
+#### 🌟 Arquitetura Desacoplada (Solução Ouro: DockerOperator)
+Para manter o Airflow leve e rápido, adotamos a arquitetura de orquestração isolada. O Airflow atua apenas como o **Maestro**, e não como o executor de processamento pesado. 
+* **Execução via Docker:** O Airflow tem acesso direto ao *daemon* do Docker do host (`/var/run/docker.sock`).
+* **Isolamento de Dependências:** Ele sobe containers efêmeros usando a imagem rica do JupyterHub (`tiagoassun/mega-jupyter:latest`), executa o código e destrói o container após o uso. Isso garante que as DAGs tenham acesso a todas as bibliotecas (Selenium, PySpark, Rust, etc.) sem inchar o Airflow.
+
+#### 🔄 Sincronização Automática (GitOps)
+A plataforma gerencia DAGs de forma dinâmica. A DAG administrativa `_sync_git_all_repos` monitora o arquivo `repos.json` e sincroniza repositórios externos a cada 1 minuto.
+* **Segurança Total:** As URLs no `repos.json` são mantidas "limpas" (ex: `https://github.com/user/repo.git`). As credenciais de acesso são injetadas em tempo de execução via variáveis de ambiente (`GIT_USER` e `GIT_TOKEN`), permitindo que o projeto seja versionado no GitHub sem risco de vazamento de tokens.
+
+**Exemplo de DAG com DockerOperator:**
+```python
+from airflow import DAG
+from airflow.providers.docker.operators.docker import DockerOperator
+from docker.types import Mount
+from datetime import datetime
+
+with DAG('dag_solucao_ouro', start_date=datetime(2026, 1, 1), schedule_interval=None) as dag:
+
+    tarefa = DockerOperator(
+        task_id='rodar_processamento_isolado',
+        image='tiagoassun/mega-jupyter:latest',
+        command='python /app/seu_script.py',
+        docker_url='unix://var/run/docker.sock',
+        network_mode='data-net',
+        auto_remove=True,
+        mounts=[
+            Mount(source='/docker-data/airflow/dags', target='/app', type='bind')
+        ]
+    )
+    
+    tarefa
+```
+
+#### ⚠️ Pré-requisitos (Importante)
+Este serviço utiliza o banco central da plataforma (`postgres-metadata`).
+1. Acesse o seu banco de dados `postgres-metadata` e **crie um database vazio chamado `airflow_db`**.
+2. Crie o arquivo `.env` na pasta `orchestration/airflow/` (este arquivo **não** deve ser enviado ao GitHub):
+   ```env
+   POSTGRES_METADATA_PASSWORD=senha_do_seu_banco_metadata
+   AIRFLOW_ADMIN_EMAIL=tiagoassunjob@outlook.com
+   AIRFLOW_ADMIN_PASSWORD=sua_senha_web_airflow
+   GIT_USER=seu_usuario_github
+   GIT_TOKEN=seu_personal_access_token
+   ```
+
+**🚀 Opção A: Deploy via Portainer (Recomendado)**
+1. Crie uma stack nomeada `airflow`.
+2. Aponte para o arquivo `orchestration/airflow/docker-compose.yml`.
+3. Preencha as variáveis de ambiente mapeadas no `.env` e faça o deploy.
+
+**💻 Opção B: Deploy Manual via Terminal**
+```bash
+docker compose -f orchestration/airflow/docker-compose.yml up -d
+```
+
+**Detalhes Técnicos:**
+* **Acesso Externo:** `{IP_DO_SERVIDOR}:8080`
+* **Rede:** `data-net` (acesso a todos os bancos e serviços).
+* **Volumes:** `/docker-data/airflow/` (Persistência de Dags, Logs e Plugins).

@@ -1,0 +1,72 @@
+services:
+  airflow-webserver:
+    image: apache/airflow:2.10.5
+    container_name: airflow-webserver
+    user: root
+    restart: unless-stopped
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://admin:${POSTGRES_METADATA_PASSWORD}@postgres-metadata:5432/airflow_db
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - GIT_USER=${GIT_USER}
+      - GIT_TOKEN=${GIT_TOKEN}
+      # Provider do Docker adicionado aqui
+      - _PIP_ADDITIONAL_DEPENDENCIES=apache-airflow-providers-postgres apache-airflow-providers-amazon apache-airflow-providers-docker
+    volumes:
+      - /docker-data/airflow/dags:/opt/airflow/dags
+      - /docker-data/airflow/logs:/opt/airflow/logs
+      - /docker-data/airflow/plugins:/opt/airflow/plugins
+      # Mapeamento do Docker Socket
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8080:8080"
+    networks:
+      - data-net
+    command: >
+          bash -c "apt-get update && apt-get install -y git && 
+          chmod 666 /var/run/docker.sock && 
+          exec runuser -u airflow -- airflow webserver"
+
+  airflow-scheduler:
+    image: apache/airflow:2.10.5
+    container_name: airflow-scheduler
+    user: root
+    restart: unless-stopped
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://admin:${POSTGRES_METADATA_PASSWORD}@postgres-metadata:5432/airflow_db
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      # Provider do Docker adicionado aqui
+      - _PIP_ADDITIONAL_DEPENDENCIES=apache-airflow-providers-postgres apache-airflow-providers-amazon apache-airflow-providers-docker
+    volumes:
+      - /docker-data/airflow/dags:/opt/airflow/dags
+      - /docker-data/airflow/logs:/opt/airflow/logs
+      - /docker-data/airflow/plugins:/opt/airflow/plugins
+      # Mapeamento do Docker Socket
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - data-net
+    command: >
+          bash -c "apt-get update && apt-get install -y git && 
+          chmod 666 /var/run/docker.sock && 
+          exec runuser -u airflow -- airflow scheduler"
+
+  airflow-init:
+    image: apache/airflow:2.10.5
+    container_name: airflow-init
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://admin:${POSTGRES_METADATA_PASSWORD}@postgres-metadata:5432/airflow_db
+    networks:
+      - data-net
+    command: >
+      bash -c "airflow db init &&
+      airflow users create --username admin --firstname Admin --lastname User --role Admin --email ${AIRFLOW_ADMIN_EMAIL} --password ${AIRFLOW_ADMIN_PASSWORD}"
+
+networks:
+  data-net:
+    external: true
