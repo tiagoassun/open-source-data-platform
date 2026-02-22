@@ -1,0 +1,19 @@
+services:
+  postgres-columnar:
+    image: ghcr.io/hydradatabase/hydra:latest
+    container_name: postgres-columnar
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - /docker-data/postgres-columnar:/var/lib/postgresql/data
+    networks:
+      - data-net
+    ports:
+      - "5432:5432"
+
+networks:
+  data-net:
+    external: true

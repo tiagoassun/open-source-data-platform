@@ -1,0 +1,18 @@
+services:
+  mariadb:
+    image: mariadb:lts
+    container_name: mariadb
+    restart: unless-stopped
+    environment:
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MARIADB_DATABASE=${MARIADB_DATABASE}
+    volumes:
+      - /docker-data/mariadb:/var/lib/mysql
+    networks:
+      - data-net
+    ports:
+      - "3307:3306"
+
+networks:
+  data-net:
+    external: true

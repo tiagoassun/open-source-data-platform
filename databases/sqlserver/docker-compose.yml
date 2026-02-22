@@ -1,0 +1,18 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    restart: unless-stopped
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
+    volumes:
+      - /docker-data/sqlserver:/var/opt/mssql
+    networks:
+      - data-net
+    ports:
+      - "1433:1433"
+
+networks:
+  data-net:
+    external: true

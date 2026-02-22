@@ -1,0 +1,18 @@
+services:
+  opensearch:
+    image: opensearchproject/opensearch:latest
+    container_name: opensearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_PASSWORD}
+    volumes:
+      - /docker-data/opensearch:/usr/share/opensearch/data
+    networks:
+      - data-net
+    ports:
+      - "9200:9200"
+
+networks:
+  data-net:
+    external: true

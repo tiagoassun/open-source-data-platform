@@ -1,0 +1,19 @@
+services:
+  postgres-metadata:
+    image: postgres:16
+    container_name: postgres-metadata
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - /docker-data/postgres-metadata:/var/lib/postgresql/data
+    networks:
+      - data-net
+    ports:
+      - "5433:5432"
+
+networks:
+  data-net:
+    external: true
