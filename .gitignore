@@ -1,0 +1,26 @@
+# Arquivos de Variáveis de Ambiente (Senhas e Configurações)
+.env
+*.env
+.env.*
+
+# Pastas de Dados Locais e Volumes do Docker
+# (Garante que nenhum banco de dados seja commitado acidentalmente)
+data/
+volumes/
+db_data/
+
+# Arquivos Temporários e Cache (Python / Airflow / Jupyter)
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+logs/
+
+# Arquivos Temporários de Sistema Operacional
+.DS_Store
+Thumbs.db
+
+# Configurações de IDEs locais (VS Code, etc.)
+.vscode/
+.idea/
+*.swp
