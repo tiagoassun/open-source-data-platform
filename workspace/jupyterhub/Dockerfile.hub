@@ -1,0 +1,22 @@
+FROM jupyterhub/jupyterhub:5.2.1
+
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gcc libpq-dev python3-dev \
+    && pip install --no-cache-dir \
+        dockerspawner==13.0.0 \
+        jupyterhub-nativeauthenticator==1.3.0 \
+        psycopg2-binary==2.9.10 \
+    && apt-get purge -y gcc python3-dev \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /etc/jupyterhub /srv/jupyterhub
+
+# Config fora de /srv/jupyterhub - esse path é montado com o volume de dados do host
+COPY jupyterhub_config.py /etc/jupyterhub/jupyterhub_config.py
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh \
+    && sed -i 's/\r$//' /entrypoint.sh /etc/jupyterhub/jupyterhub_config.py
+
+WORKDIR /srv/jupyterhub
+ENTRYPOINT ["/bin/bash", "/entrypoint.sh"]

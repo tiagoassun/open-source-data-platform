@@ -1,11 +1,15 @@
+# MySQL 8 - banco relacional on-demand.
+# Documentação completa: ./README.md
+# Pré-requisito: .env (MYSQL_*) e rede externa data-net.
+
 services:
   mysql:
     image: mysql:8.0
     container_name: mysql
     restart: unless-stopped
     environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
     volumes:
       - /docker-data/mysql:/var/lib/mysql
     networks:

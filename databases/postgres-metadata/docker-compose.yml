@@ -1,18 +1,30 @@
+# PostgreSQL Metadata - metadados de Airflow, JupyterHub e Superset.
+# Documentação completa: ./README.md
+# Pré-requisito: .env (POSTGRES_METADATA_*) e rede externa data-net.
+# init-databases.sh cria airflow_db, jupyterhub_db e superset_db no primeiro boot.
+
 services:
   postgres-metadata:
     image: postgres:16
     container_name: postgres-metadata
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_METADATA_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_METADATA_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_METADATA_DB:-postgres}
     volumes:
       - /docker-data/postgres-metadata:/var/lib/postgresql/data
+      - ./init-databases.sh:/docker-entrypoint-initdb.d/01-init-databases.sh:ro
     networks:
       - data-net
     ports:
       - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_METADATA_USER:-admin} -d ${POSTGRES_METADATA_DB:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
 networks:
   data-net:

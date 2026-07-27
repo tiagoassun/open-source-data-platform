@@ -1,11 +1,15 @@
+# MariaDB LTS - MySQL-compativel on-demand (host :3307).
+# Documentação completa: ./README.md
+# Pré-requisito: .env (MARIADB_*) e rede externa data-net.
+
 services:
   mariadb:
     image: mariadb:lts
     container_name: mariadb
     restart: unless-stopped
     environment:
-      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
-      - MARIADB_DATABASE=${MARIADB_DATABASE}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
     volumes:
       - /docker-data/mariadb:/var/lib/mysql
     networks:

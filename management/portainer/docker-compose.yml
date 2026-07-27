@@ -1,16 +1,19 @@
-version: '3.9'
+# Portainer CE - gestão dos containers/stacks desta plataforma.
+# Documentação completa: ./README.md
+# Pré-requisito: rede externa data-net.
+# Sobe via CLI (não via Stack do próprio Portainer).
 
 services:
   portainer:
-    image: portainer/portainer-ce:latest
+    image: portainer/portainer-ce:2.27.9
     container_name: portainer
-    restart: always
+    restart: unless-stopped
     ports:
-      - "8000:8000"
-      - "9443:9443"
+      - "8000:8000"   # Edge Agent (hosts remotos); opcional em host único
+      - "9443:9443"   # UI HTTPS
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /docker-data/portainer:/data
+      - /var/run/docker.sock:/var/run/docker.sock   # controla o Docker deste host
+      - /docker-data/portainer:/data                # usuários, stacks, settings
     networks:
       - data-net
 

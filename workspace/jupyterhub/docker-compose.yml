@@ -1,6 +1,13 @@
+# JupyterHub - workspace multi-usuário (NativeAuthenticator; build antes do stack).
+# Documentação completa: ./README.md
+# Pré-requisito: postgres-metadata (jupyterhub_db), .env, DOCKER_GID, imagem mega-jupyter, rede data-net.
+
 services:
   jupyterhub:
-    image: jupyterhub/jupyterhub:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.hub
+    image: tiagoassun/jupyterhub-hub:5.2.1
     container_name: jupyterhub
     networks:
       - data-net
@@ -10,16 +17,23 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /docker-data/jupyterhub:/srv/jupyterhub
+    group_add:
+      - "${DOCKER_GID:-983}"
     environment:
-      - JUPYTERHUB_CRYPT_KEY=${JUPYTERHUB_CRYPT_KEY}
-      - DATABASE_URL=postgresql://admin:${POSTGRES_METADATA_PASSWORD}@postgres-metadata:5432/jupyterhub_db
-      # Timeouts para garantir que a imagem Mega Jupyter suba no em servidores fracos
-      - DOCKER_SPAWNER_HTTP_TIMEOUT=600
-      - JUPYTERHUB_HTTP_TIMEOUT=600
-    command: >
-      bash -c "apt-get update && apt-get install -y gcc libpq-dev python3-dev &&
-      pip install dockerspawner jupyterhub-nativeauthenticator psycopg2-binary &&
-      jupyterhub -f /srv/jupyterhub/jupyterhub_config.py"
+      JUPYTERHUB_CRYPT_KEY: ${JUPYTERHUB_CRYPT_KEY}
+      DATABASE_URL: postgresql://${POSTGRES_METADATA_USER:-admin}:${POSTGRES_METADATA_PASSWORD}@postgres-metadata:5432/jupyterhub_db
+      POSTGRES_METADATA_USER: ${POSTGRES_METADATA_USER:-admin}
+      POSTGRES_METADATA_PASSWORD: ${POSTGRES_METADATA_PASSWORD}
+      DOCKER_SPAWNER_HTTP_TIMEOUT: ${DOCKER_SPAWNER_HTTP_TIMEOUT:-600}
+      JUPYTERHUB_HTTP_TIMEOUT: ${JUPYTERHUB_HTTP_TIMEOUT:-600}
+      JUPYTERHUB_SPAWNER_IMAGE: ${JUPYTERHUB_SPAWNER_IMAGE:-tiagoassun/mega-jupyter:latest}
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/hub/login')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
 networks:
   data-net:

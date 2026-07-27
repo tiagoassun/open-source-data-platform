@@ -1,10 +1,14 @@
+# Apache Cassandra - wide-column on-demand (sem auth neste compose).
+# Documentação completa: ./README.md
+# Pré-requisito: rede externa data-net.
+
 services:
   cassandra:
     image: cassandra:latest
     container_name: cassandra
     restart: unless-stopped
     environment:
-      - CASSANDRA_CLUSTER_NAME=LabCluster
+      CASSANDRA_CLUSTER_NAME: PlatformCluster
     volumes:
       - /docker-data/cassandra:/var/lib/cassandra
     networks:

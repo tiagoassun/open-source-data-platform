@@ -35,7 +35,7 @@ RUN pip install --no-cache-dir \
     # Inteligência Artificial
     google-generativeai openai anthropic \
     # Bancos de Dados
-    boto3 psycopg2-binary oracledb pymysql pymssql cassandra-driver pymongo opensearch-py
+    boto3 psycopg2-binary pymysql cassandra-driver pymongo opensearch-py
 
 # Instala os navegadores do Playwright para Scraping avançado
 RUN playwright install chromium
