@@ -1,7 +1,7 @@
 # PostgreSQL Metadata - metadados de Airflow, JupyterHub e Superset.
 # Documentação completa: ./README.md
-# Pré-requisito: .env (POSTGRES_METADATA_*) e rede externa data-net.
-# init-databases.sh cria airflow_db, jupyterhub_db e superset_db no primeiro boot.
+# Antes de subir: .env (POSTGRES_METADATA_*) e rede externa data-net.
+# init-databases.sh cria airflow_db, jupyterhub_db, superset_db, wikijs_db, keycloak_db, sonarqube_db e openmetadata_db no primeiro boot.
 
 services:
   postgres-metadata:
