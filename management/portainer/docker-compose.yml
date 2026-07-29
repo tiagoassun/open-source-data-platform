@@ -1,6 +1,6 @@
 # Portainer CE - gestão dos containers/stacks desta plataforma.
 # Documentação completa: ./README.md
-# Pré-requisito: rede externa data-net.
+# Antes de subir: rede externa data-net.
 # Sobe via CLI (não via Stack do próprio Portainer).
 
 services:

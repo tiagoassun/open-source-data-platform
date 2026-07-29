@@ -4,17 +4,17 @@ Gestão visual dos containers e stacks Docker desta plataforma.
 
 O Portainer é o **primeiro** serviço a subir, e o único que sobe **obrigatoriamente via terminal**. Depois dele, os demais serviços sobem como **Stacks** na UI.
 
-Documentação oficial: https://docs.portainer.io/
+Documentação oficial: [https://docs.portainer.io/](https://docs.portainer.io/)
 
-## Papel na plataforma
+## Para que serve
 
 - Interface HTTPS para operar Docker no host (containers, imagens, redes, volumes, stacks)
 - Ponto único de deploy dos outros serviços deste repositório
 - Persistência de usuários, stacks e configurações em `/docker-data/portainer`
 
-## Pré-requisitos
+## O que precisa antes
 
-1. Rede externa `data-net` criada (ver README da raiz e `scripts/create_network.sh`)
+1. Rede externa `data-net` criada (ver README da raiz e `_scripts/create_network.sh`)
 2. Docker Engine + Docker Compose no host
 3. Pasta de dados no host:
 
@@ -40,10 +40,12 @@ docker logs -f portainer
 
 ## Acesso
 
-| O que | Endereço |
-|-------|----------|
-| UI HTTPS | `https://{IP_DO_SERVIDOR}:9443` |
-| Edge / tunnel (opcional) | porta `8000` no host |
+
+| O que                    | Endereço                        |
+| ------------------------ | ------------------------------- |
+| UI HTTPS                 | `https://{IP_DO_SERVIDOR}:9443` |
+| Edge / tunnel (opcional) | porta `8000` no host            |
+
 
 O certificado HTTPS é **autoassinado** por padrão: o browser vai alertar (avançar / aceitar o risco). Em produção, coloque TLS na frente (reverse proxy / Cloudflare Tunnel) e restrinja o acesso pela rede.
 
@@ -53,11 +55,13 @@ O certificado HTTPS é **autoassinado** por padrão: o browser vai alertar (avan
 
 **Não há senha padrão.** Com este `docker-compose.yml`, o Portainer CE **não** sobe com usuário/senha de fábrica.
 
-| Mito | Realidade neste projeto |
-|------|-------------------------|
-| `admin` / `admin` | Não existe |
-| `admin` / `portainer` | Não existe |
-| Qualquer senha fixa no compose | Não há |
+
+| Mito                           | Realidade neste projeto |
+| ------------------------------ | ----------------------- |
+| `admin` / `admin`              | Não existe              |
+| `admin` / `portainer`          | Não existe              |
+| Qualquer senha fixa no compose | Não há                  |
+
 
 Na **primeira** vez (volume `/docker-data/portainer` vazio), **você** define o administrador na UI. Essa senha que você criar **é** a senha do ambiente - não há outra escondida.
 
@@ -66,16 +70,18 @@ Na **primeira** vez (volume `/docker-data/portainer` vazio), **você** define o 
 1. Suba o container (`docker compose ... up -d`) e espere ficar rodando.
 2. Abra `https://{IP_DO_SERVIDOR}:9443` no browser (aceite o aviso do certificado autoassinado se aparecer).
 3. Na tela de setup, **crie o primeiro administrador**:
-   - **Username:** por padrão sugere `admin` (pode alterar)
-   - **Password:** defina agora; mínimo **12 caracteres** (e as regras que a tela listar)
+  - **Username:** por padrão sugere `admin` (pode alterar)
+  - **Password:** defina agora; mínimo **12 caracteres** (e as regras que a tela listar)
 4. Guarde essa senha com o mesmo rigor de uma conta **root** do servidor: admin no Portainer controla o Docker deste host via `docker.sock`.
-5. Em versões recentes, a UI pode pedir um **setup token**. Se pedir:
+5. Em versões recentes do Portainer, a tela de criação do admin pode pedir um **código de confirmação** (setup token). Isso é uma proteção anti-bot: o Portainer gera esse código nos **logs do container**. Se a UI pedir, rode no host:
 
 ```bash
 docker logs portainer 2>&1 | grep -i setup_token
 ```
 
-6. Depois do admin criado, o **Environment Wizard** aparece. Com o socket montado, o ambiente **local** (Docker deste host) costuma ser detectado automaticamente. Avance com **Get Started** (ou adicione outros environments depois).
+Copie o valor que aparecer e cole na UI. Se a tela **não** pedir o token, ignore este passo.
+
+1. Depois do admin criado, o **Environment Wizard** aparece. Com o socket montado, o ambiente **local** (Docker deste host) costuma ser detectado automaticamente. Avance com **Get Started** (ou adicione outros environments depois).
 
 ### Depois do primeiro login: troque / rotacione a senha
 
@@ -85,19 +91,19 @@ Mesmo tendo sido **você** quem definiu a senha no setup:
 2. Vá em **My account** (ou equivalente no menu do usuário) e **altere a senha** para uma senha forte, única deste ambiente.
 3. Em produção: use gerenciador de senhas; não compartilhe a conta admin; crie usuários com perfil menor para o dia a dia, se fizer sentido.
 
-Não deixe a senha do setup “provisória” para sempre - trate a troca (ou a confirmação de que a senha do setup já é a definitiva e forte) como parte do go-live.
+Não deixe a senha do setup "provisória" para sempre - trate a troca (ou a confirmação de que a senha do setup já é a definitiva e forte) como parte de colocar o serviço em uso.
 
 ### Acessos seguintes
 
 - Login em `https://{IP_DO_SERVIDOR}:9443` com o usuário e a senha atuais (a do setup ou a que você trocou depois).
-- Se esquecer a senha: não há reset “mágico” pela UI sem acesso ao host; use o procedimento oficial da documentação do Portainer e **não** apague `/docker-data/portainer` sem backup.
+- Se esquecer a senha: não há reset "mágico" pela UI sem acesso ao host; use o procedimento oficial da documentação do Portainer e **não** apague `/docker-data/portainer` sem backup.
 
 ### Se a tela de criar admin não aparecer
 
 - O volume `/docker-data/portainer` **já tem** um admin de uma instalação anterior: use esse usuário/senha (ainda assim, **troque a senha** se não tiver certeza de quem a conhece).
 - Ou o container ainda não subiu / a porta 9443 não está acessível: confira `docker ps` e `docker logs portainer`.
 
-### Senha pré-definida no deploy (opcional, automação)
+### Senha pré-definida no deploy (opcional, automação)**token**
 
 Este `docker-compose.yml` **não** pré-configura senha (fluxo na UI).
 
@@ -109,8 +115,8 @@ Arquivo: `docker-compose.yml`
 
 ### Imagem
 
-- `portainer/portainer-ce:2.27.9` (tag pinada)
-- Evite `:latest` em produção: uma atualização sem pin pode mudar comportamento
+- `portainer/portainer-ce:2.27.9` (versão fixa da imagem)
+- Evite `:latest` em produção: uma atualização sem versão fixa pode mudar comportamento
 
 ### Restart
 
@@ -118,10 +124,12 @@ Arquivo: `docker-compose.yml`
 
 ### Portas
 
-| Host | Container | Uso |
-|------|-----------|-----|
-| 9443 | 9443 | UI web HTTPS (use esta) |
-| 8000 | 8000 | Canal do **Portainer Edge Agent** |
+
+| Host | Container | Uso                               |
+| ---- | --------- | --------------------------------- |
+| 9443 | 9443      | UI web HTTPS (use esta)           |
+| 8000 | 8000      | Canal do **Portainer Edge Agent** |
+
 
 Sobre a porta **8000**:
 
@@ -132,10 +140,12 @@ Sobre a porta **8000**:
 
 ### Volumes
 
-| Host | Container | Uso |
-|------|-----------|-----|
-| `/var/run/docker.sock` | `/var/run/docker.sock` | Controle do Docker Engine deste host |
-| `/docker-data/portainer` | `/data` | Usuários, stacks, settings |
+
+| Host                     | Container              | Uso                                  |
+| ------------------------ | ---------------------- | ------------------------------------ |
+| `/var/run/docker.sock`   | `/var/run/docker.sock` | Controle do Docker Engine deste host |
+| `/docker-data/portainer` | `/data`                | Usuários, stacks, settings           |
+
 
 **Docker socket (`docker.sock`):**
 
@@ -149,7 +159,7 @@ Se você recriar o container do Portainer sem apagar `/docker-data/portainer`, u
 
 ### Rede
 
-- `data-net` (externa): o Portainer enxerga os outros containers da plataforma pelo nome DNS interno
+- `data-net` (externa): o Portainer enxerga os outros containers da plataforma pelo nome na rede Docker
 
 ## Operação em produção
 
@@ -157,16 +167,23 @@ Se você recriar o container do Portainer sem apagar `/docker-data/portainer`, u
 - Não exponha `:9443` na internet sem autenticação forte e TLS adequado
 - Prefira Stacks no Portainer para os demais serviços; reserve a CLI para Portainer, emergências e builds de imagem
 - Backup periódico de `/docker-data/portainer`
-- Ao atualizar a imagem, pin a nova tag no compose, teste e só então aplique
+- Ao atualizar a imagem, fixe a nova tag no compose, teste e só então aplique
 
 ## Atualizar / recriar
+
+Neste projeto a imagem está com **versão fixa** (ex.: `portainer/portainer-ce:2.27.9` no compose). O `pull` só baixa **essa** tag; não atualiza sozinho para uma versão mais nova.
+
+Para subir de versão:
+
+1. Edite a tag no `docker-compose.yml` (ex.: `2.27.9` -> `2.28.0`).
+2. Rode:
 
 ```bash
 docker compose -f management/portainer/docker-compose.yml pull
 docker compose -f management/portainer/docker-compose.yml up -d
 ```
 
-Troque a tag da imagem no `docker-compose.yml` antes do `pull` se estiver pinando versão.
+Se você **não** mudar a tag antes, o `pull`/`up` só recria o mesmo `2.27.9` (útil para recriar o container, não para atualizar).
 
 ## Parar
 
